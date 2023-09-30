@@ -1,4 +1,4 @@
-package main
+package workers
 
 import (
 	"errors"
@@ -11,6 +11,12 @@ const (
 	running
 )
 
+// ErrRunnerTimedout means a timeout occured waiting for result of "fn"
+var ErrRunnerTimedout = errors.New("runner timed out")
+
+// QueuedRunner serializes access to a function, allowing multiple goroutines
+// to queue returning identical result to all waiters.  The caller must
+// not retain or modify result unless safe to do so given function "fn".
 type QueuedRunner struct {
 	mu    *sync.Mutex
 	fn    func() any
@@ -19,6 +25,7 @@ type QueuedRunner struct {
 	gen   int
 }
 
+// NewQueuedRunner for the given function "fn"
 func NewQueuedRunner(fn func() any) *QueuedRunner {
 	return &QueuedRunner{
 		mu: new(sync.Mutex),
@@ -26,6 +33,12 @@ func NewQueuedRunner(fn func() any) *QueuedRunner {
 	}
 }
 
+// RunTimeout runs or queues until timeout for the next result of function "fn".
+// If timeout is zero, return immediately with response or ErrRunnerTimeout when
+// no result is available.  If timeout is positive return ErrRunnerTimeout
+// when timeout occurs.  Wait for result when timeout is negative.
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
 func (qr *QueuedRunner) RunTimeout(timeout time.Duration) any {
 	var gen int
 	qr.mu.Lock()
@@ -49,7 +62,7 @@ func (qr *QueuedRunner) RunTimeout(timeout time.Duration) any {
 			return v
 		case <-t.C:
 			qr.abort(gen, r)
-			return errors.New("Timeout")
+			return ErrRunnerTimedout
 		}
 	} else if timeout == 0 {
 		select {
@@ -57,13 +70,16 @@ func (qr *QueuedRunner) RunTimeout(timeout time.Duration) any {
 			return v
 		default:
 			qr.abort(gen, r)
-			return errors.New("Timeout")
+			return ErrRunnerTimedout
 		}
 	}
 
 	return <-r
 }
 
+// Run or queue for the next result of the function "fn"
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
 func (qr *QueuedRunner) Run() any {
 	return qr.RunTimeout(-1)
 }
