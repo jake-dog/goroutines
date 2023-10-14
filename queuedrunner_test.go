@@ -3,6 +3,7 @@ package workers
 import (
 	"testing"
 	"time"
+	"runtime"
 	"sync/atomic"
 )
 
@@ -133,6 +134,7 @@ func TestQueuedRunner(t *testing.T) {
 	})
 	for _, tt := range tests {
 		go tt.fn(q)
+		runtime.Gosched()
 		time.Sleep(10 * time.Millisecond) // Sleep to let goroutine run
 		q.mu.Lock()
 		if tt.gen != q.gen {
@@ -142,6 +144,189 @@ func TestQueuedRunner(t *testing.T) {
 			t.Errorf("Expected qlen=%v but received qlen=%v", tt.qlen, len(q.l))
 		}
 		q.mu.Unlock()
+		if tt.sleep > 0 {
+			time.Sleep(tt.sleep)
+		}
+	}
+	if numResults := finished.Load(); numResults != uint64(len(tests)-1) {
+		t.Errorf("Expected results in tests=%d, but received results=%d", len(tests)-1, numResults)
+	}
+}
+
+func TestCachedQueuedRunner(t *testing.T) {
+	finished := new(atomic.Uint64)
+	tests := []struct {
+		name    string
+		fn      func(*QueuedRunner)
+		sleep   time.Duration
+		gen     int
+		qlen    int
+		running bool
+	}{
+		{
+			name: "t1_uncached",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCached()
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 0,
+			gen: 1,
+			qlen: 1,
+			running: true,
+		},
+		{
+			name: "t2_uncached",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCached()
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 0,
+			gen: 1,
+			qlen: 2,
+			running: true,
+		},
+		{
+			name: "t3_uncached_immediate",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCachedTimeout(0)
+				if err != ErrRunnerTimedout {
+					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
+				}
+				if v != nil {
+					t.Errorf("Expected v=nil but received v=%v", v)
+				}
+				finished.Add(1)
+			},
+			sleep: 0,
+			gen: 1,
+			qlen: 2,
+			running: true,
+		},
+		{
+			name: "t4_uncached_nearimmediate",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCachedTimeout(20*time.Millisecond)
+				if err != ErrRunnerTimedout {
+					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
+				}
+				if v != nil {
+					t.Errorf("Expected v=nil but received v=%v", v)
+				}
+				finished.Add(1)
+			},
+			sleep: 250 * time.Millisecond,
+			gen: 1,
+			qlen: 3,
+			running: true,
+		},
+		{
+			name: "t5_cached",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCachedTimeout(0)
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 0,
+			gen: 1,
+			qlen: 0,
+			running: false,
+		},
+		{
+			name: "t6_cached",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCached()
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 50 * time.Millisecond,
+			gen: 1,
+			qlen: 0,
+			running: false,
+		},
+		{
+			name: "t7_cached_grace",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCached()
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 250 * time.Millisecond,
+			gen: 2,
+			qlen: 0,
+			running: true,
+		},
+		{
+			name: "t8_cached",
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.RunCached()
+				if v != "foo" {
+					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
+				}
+				finished.Add(1)
+			},
+			sleep: 250 * time.Millisecond,
+			gen: 2,
+			qlen: 0,
+			running: false,
+		},
+		{
+			name: "t9",
+			fn: func(_ *QueuedRunner) {
+			},
+			sleep: 0,
+			gen: 2,
+			qlen: 0,
+		},
+	}
+	q := NewCachedQueuedRunner(func() (any, error) {
+		time.Sleep(200 * time.Millisecond)
+		return "foo", nil
+	}, 100 * time.Millisecond, 100 * time.Millisecond)
+	for _, tt := range tests {
+		go tt.fn(q)
+		runtime.Gosched()
+		time.Sleep(5 * time.Millisecond) // Sleep to let goroutine run
+		q.mu.Lock()
+		if tt.gen != q.gen {
+			t.Errorf("[%v] Expected generation=%v but received generation=%v", tt.name, tt.gen, q.gen)
+		}
+		if tt.qlen != len(q.l) {
+			t.Errorf("[%v] Expected qlen=%v but received qlen=%v", tt.name, tt.qlen, len(q.l))
+		}
+		q.mu.Unlock()
+		if q.IsRunning() != tt.running {
+			t.Errorf("[%v] Expected runner to be running=%v", tt.name, tt.running)
+		}
 		if tt.sleep > 0 {
 			time.Sleep(tt.sleep)
 		}

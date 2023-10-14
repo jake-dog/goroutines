@@ -149,7 +149,7 @@ func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) (any, error
 
 func rvalue(v [2]any) (any, error) {
 	if v[1] != nil {
-		return v[0],v[1].(error)
+		return v[0], v[1].(error)
 	}
 	return v[0], nil
 }
