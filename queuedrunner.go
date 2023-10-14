@@ -27,6 +27,7 @@ type QueuedRunner struct {
 	gen    int
 	result any
 	ttl    time.Duration
+	grace  time.Duration
 	added  time.Time
 }
 
@@ -38,12 +39,17 @@ func NewQueuedRunner(fn func() any) *QueuedRunner {
 	}
 }
 
-// NewCachedQueuedRunner for the given "fn" with cache ttl for results
-func NewCachedQueuedRunner(fn func() any, ttl time.Duration) *QueuedRunner {
+// NewCachedQueuedRunner for the given "fn" with cache ttl/grace for results.
+// A cached results is returned if available and the result is not older than
+// ttl+grace.  If the result is older than ttl but younger than grace+ttl,
+// a cached result is returned and a call to "fn" is made concurrently,
+// refreshing the cached result.
+func NewCachedQueuedRunner(fn func() any, ttl time.Duration, grace time.Duration) *QueuedRunner {
 	return &QueuedRunner{
-		mu:  new(sync.Mutex),
-		fn:  fn,
-		ttl: ttl,
+		mu:    new(sync.Mutex),
+		fn:    fn,
+		ttl:   ttl,
+		grace: grace,
 	}
 }
 
@@ -87,6 +93,17 @@ func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) any {
 		return qr.result
 	}
 
+	if allowCached && qr.grace > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl+qr.grace {
+		defer qr.mu.Unlock()
+		if qr.state == running {
+			return qr.result
+		}
+		qr.state = running
+		qr.gen = qr.gen + 1
+		go qr.pump()
+		return qr.result
+	}
+
 	r := make(chan any, 1)
 	if qr.state == running {
 		qr.l = append(qr.l, r)
@@ -123,10 +140,20 @@ func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) any {
 }
 
 func (qr *QueuedRunner) Flush() {
+	if qr.ttl > 0 || qr.grace > 0 {
+		qr.mu.Lock()
+		qr.result = nil
+		qr.added = zeroTime
+		qr.mu.Unlock()
+	}
+}
+
+func (qr *QueuedRunner) IsRunning() bool {
+	var isrunning bool
 	qr.mu.Lock()
-	qr.result = nil
-	qr.added = zeroTime
+	isrunning = qr.state == running
 	qr.mu.Unlock()
+	return isrunning
 }
 
 func (qr *QueuedRunner) pump() {
@@ -135,7 +162,7 @@ func (qr *QueuedRunner) pump() {
 	qr.mu.Lock()
 	defer qr.mu.Unlock()
 
-	if qr.ttl > 0 {
+	if qr.ttl > 0 || qr.grace > 0 {
 		qr.result = v
 		qr.added = time.Now()
 	}
