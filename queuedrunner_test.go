@@ -16,9 +16,12 @@ func TestQueuedRunner(t *testing.T) {
 	}{
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.Run()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
 				}
 				finished.Add(1)
 			},
@@ -28,21 +31,12 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.Run()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
-				finished.Add(1)
-			},
-			sleep: 0,
-			gen: 1,
-			qlen: 2,
-		},
-		{
-			fn: func(qr *QueuedRunner) {
-				v := qr.RunTimeout(0)
-				if v != ErrRunnerTimedout {
-					t.Errorf("Expected ErrRunnerTimedout received=%v", v)
+				if err != nil {
+					t.Error(err)
 				}
 				finished.Add(1)
 			},
@@ -52,9 +46,12 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.RunTimeout(5*time.Millisecond)
-				if v != ErrRunnerTimedout {
-					t.Errorf("Expected ErrRunnerTimedout received=%v", v)
+				v, err := qr.RunTimeout(0)
+				if err != ErrRunnerTimedout {
+					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
+				}
+				if v != nil {
+					t.Errorf("Expected v=nil but received v=%v", v)
 				}
 				finished.Add(1)
 			},
@@ -64,9 +61,27 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.Run()
+				v, err := qr.RunTimeout(5*time.Millisecond)
+				if err != ErrRunnerTimedout {
+					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
+				}
+				if v != nil {
+					t.Errorf("Expected v=nil but received v=%v", v)
+				}
+				finished.Add(1)
+			},
+			sleep: 0,
+			gen: 1,
+			qlen: 2,
+		},
+		{
+			fn: func(qr *QueuedRunner) {
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
 				}
 				finished.Add(1)
 			},
@@ -76,9 +91,12 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.RunTimeout(1 * time.Second)
+				v, err := qr.RunTimeout(1 * time.Second)
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
 				}
 				finished.Add(1)
 			},
@@ -88,9 +106,12 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v := qr.Run()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
+				}
+				if err != nil {
+					t.Error(err)
 				}
 				finished.Add(1)
 			},
@@ -106,9 +127,9 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 0,
 		},
 	}
-	q := NewQueuedRunner(func() any {
+	q := NewQueuedRunner(func() (any, error) {
 		time.Sleep(100 * time.Millisecond)
-		return "foo"
+		return "foo", nil
 	})
 	for _, tt := range tests {
 		go tt.fn(q)
