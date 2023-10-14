@@ -11,6 +11,8 @@ const (
 	running
 )
 
+var zeroTime = time.Time{}
+
 // ErrRunnerTimedout means a timeout occured waiting for result of "fn"
 var ErrRunnerTimedout = errors.New("runner timed out")
 
@@ -18,11 +20,14 @@ var ErrRunnerTimedout = errors.New("runner timed out")
 // to queue returning identical result to all waiters.  The caller must
 // not retain or modify result unless safe to do so given function "fn".
 type QueuedRunner struct {
-	mu    *sync.Mutex
-	fn    func() any
-	l     []chan any
-	state int
-	gen   int
+	mu     *sync.Mutex
+	fn     func() any
+	l      []chan any
+	state  int
+	gen    int
+	result any
+	ttl    time.Duration
+	added  time.Time
 }
 
 // NewQueuedRunner for the given function "fn"
@@ -33,15 +38,55 @@ func NewQueuedRunner(fn func() any) *QueuedRunner {
 	}
 }
 
-// RunTimeout runs or queues until timeout for the next result of function "fn".
-// If timeout is zero, return immediately with response or ErrRunnerTimeout when
+// NewCachedQueuedRunner for the given "fn" with cache ttl for results
+func NewCachedQueuedRunner(fn func() any, ttl time.Duration) *QueuedRunner {
+	return &QueuedRunner{
+		mu:  new(sync.Mutex),
+		fn:  fn,
+		ttl: ttl,
+	}
+}
+
+// RunTimeout runs or queues until timeout for the next result of "fn". If
+// timeout is zero, return immediately with response or ErrRunnerTimeout when
 // no result is available.  If timeout is positive return ErrRunnerTimeout
 // when timeout occurs.  Wait for result when timeout is negative.
 // Can be called from mulitple goroutines ensuring only one invocation of "fn"
 // is active at a time.
 func (qr *QueuedRunner) RunTimeout(timeout time.Duration) any {
+	return qr.run(timeout, false)
+}
+
+// RunCachedTimeout mimics RunTimeout but returns a cached result if available
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (qr *QueuedRunner) RunCachedTimeout(timeout time.Duration) any {
+	return qr.run(timeout, true)
+}
+
+// Run or queue for the next result of "fn"
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (qr *QueuedRunner) Run() any {
+	return qr.run(-1, false)
+}
+
+// RunCached returns the next result of "fn", or cached value if available
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (qr *QueuedRunner) RunCached() any {
+	return qr.run(-1, true)
+}
+
+func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) any {
 	var gen int
 	qr.mu.Lock()
+
+	if allowCached && qr.ttl > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl {
+		defer qr.mu.Unlock()
+		return qr.result
+	}
+
 	r := make(chan any, 1)
 	if qr.state == running {
 		qr.l = append(qr.l, r)
@@ -77,11 +122,11 @@ func (qr *QueuedRunner) RunTimeout(timeout time.Duration) any {
 	return <-r
 }
 
-// Run or queue for the next result of the function "fn"
-// Can be called from mulitple goroutines ensuring only one invocation of "fn"
-// is active at a time.
-func (qr *QueuedRunner) Run() any {
-	return qr.RunTimeout(-1)
+func (qr *QueuedRunner) Flush() {
+	qr.mu.Lock()
+	qr.result = nil
+	qr.added = zeroTime
+	qr.mu.Unlock()
 }
 
 func (qr *QueuedRunner) pump() {
@@ -89,6 +134,11 @@ func (qr *QueuedRunner) pump() {
 
 	qr.mu.Lock()
 	defer qr.mu.Unlock()
+
+	if qr.ttl > 0 {
+		qr.result = v
+		qr.added = time.Now()
+	}
 
 	for _, l := range qr.l {
 		l <- v
