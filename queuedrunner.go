@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -66,7 +67,7 @@ func NewCachedQueuedRunner(fn RunnerFn, ttl time.Duration, grace time.Duration) 
 // when timeout occurs.  Wait for result when timeout is negative.
 // Can be called from mulitple goroutines ensuring only one invocation of "fn"
 // is active at a time.
-func (qr *QueuedRunner) RunTimeout(timeout time.Duration) (any, error) {
+/*func (qr *QueuedRunner) RunTimeout(timeout time.Duration) (any, error) {
 	return qr.run(timeout, false)
 }
 
@@ -89,22 +90,69 @@ func (qr *QueuedRunner) Run() (any, error) {
 // is active at a time.
 func (qr *QueuedRunner) RunCached() (any, error) {
 	return qr.run(-1, true)
+}*/
+
+type UncachedQueuedRunner struct{
+	qr *QueuedRunner
 }
 
-func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) (any, error) {
+func (u UncachedQueuedRunner) TryRun() (any, error) {
+	return u.qr.run(context.Background(), 0, true)
+}
+
+func (u UncachedQueuedRunner) Run() (any, error) {
+	return u.qr.run(context.Background(), -1, true)
+}
+
+func (u UncachedQueuedRunner) RunWithContext(ctx context.Context) (any, error) {
+	return u.qr.run(ctx, -1, true)
+}
+
+func (u UncachedQueuedRunner) RunWithTimeout(timeout time.Duration) (any, error) {
+	return u.qr.run(context.Background(), timeout, true)
+}
+
+func (qr *QueuedRunner) TryRun() (any, error) {
+	return qr.run(context.Background(), 0, false)
+}
+
+func (qr *QueuedRunner) Run() (any, error) {
+	return qr.run(context.Background(), -1, false)
+}
+
+func (qr *QueuedRunner) RunWithContext(ctx context.Context) (any, error) {
+	return qr.run(ctx, -1, false)
+}
+
+func (qr *QueuedRunner) RunWithTimeout(timeout time.Duration) (any, error) {
+	return qr.run(context.Background(), timeout, false)
+}
+
+func (qr *QueuedRunner) NoCache() UncachedQueuedRunner {
+	return UncachedQueuedRunner{qr}
+}
+
+func (qr *QueuedRunner) run(ctx context.Context, timeout time.Duration, noCache bool) (any, error) {
 	var gen int
 	qr.mu.Lock()
 
-	if allowCached && qr.ttl > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl {
+	if !noCache && qr.ttl > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl {
 		defer qr.mu.Unlock()
 		return qr.result, nil
 	}
 
-	if allowCached && qr.grace > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl+qr.grace {
+	if !noCache && qr.grace > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl+qr.grace {
 		defer qr.mu.Unlock()
 		if qr.state == running {
 			return qr.result, nil
 		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
 		qr.state = running
 		qr.gen = qr.gen + 1
 		go qr.pump()
@@ -116,6 +164,12 @@ func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) (any, error
 		qr.l = append(qr.l, r)
 		gen = qr.gen
 	} else {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
 		qr.state = running
 		qr.l = append(qr.l, r)
 		qr.gen = qr.gen + 1
@@ -132,19 +186,27 @@ func (qr *QueuedRunner) run(timeout time.Duration, allowCached bool) (any, error
 		case <-t.C:
 			qr.abort(gen, r)
 			return nil, ErrRunnerTimedout
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		}
 	} else if timeout == 0 {
 		select {
 		case v := <-r:
 			return rvalue(v)
+		case <-ctx.Done():
+			return nil, ctx.Err()
 		default:
 			qr.abort(gen, r)
 			return nil, ErrRunnerTimedout
 		}
 	}
 
-	v := <-r
-	return rvalue(v)
+	select {
+		case v := <-r:
+			return rvalue(v)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+	}
 }
 
 func rvalue(v [2]any) (any, error) {

@@ -47,7 +47,7 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunTimeout(0)
+				v, err := qr.TryRun()
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -62,7 +62,7 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunTimeout(5*time.Millisecond)
+				v, err := qr.RunWithTimeout(5*time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -92,7 +92,7 @@ func TestQueuedRunner(t *testing.T) {
 		},
 		{
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunTimeout(1 * time.Second)
+				v, err := qr.RunWithTimeout(1 * time.Second)
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -166,7 +166,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t1_uncached",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCached()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -183,7 +183,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t2_uncached",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCached()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -200,7 +200,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t3_uncached_immediate",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCachedTimeout(0)
+				v, err := qr.RunWithTimeout(0)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -217,7 +217,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t4_uncached_nearimmediate",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCachedTimeout(20*time.Millisecond)
+				v, err := qr.RunWithTimeout(20*time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -234,7 +234,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t5_cached",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCachedTimeout(0)
+				v, err := qr.TryRun()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -251,7 +251,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t6_cached",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCached()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -268,7 +268,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t7_cached_grace",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCached()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
@@ -285,7 +285,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		{
 			name: "t8_cached",
 			fn: func(qr *QueuedRunner) {
-				v, err := qr.RunCached()
+				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
 				}
