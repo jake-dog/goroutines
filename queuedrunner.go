@@ -22,26 +22,26 @@ var ErrRunnerTimedout = errors.New("runner timed out")
 // the returned error must be nil and the value of result is an error.
 // If both error and result are nil, the result is not cached.
 // The result may be concurrently accessed and must not be modified.
-type RunnerFn func() (result any, err error)
+//type RunnerFn func() (result any, err error)
 
 // QueuedRunner serializes access to a function, allowing multiple goroutines
 // to queue returning identical result to all waiters.  The caller must
 // not retain or modify result unless safe to do so given function "fn".
-type QueuedRunner struct {
+type QueuedRunner[T any] struct {
 	mu     *sync.Mutex
-	fn     RunnerFn
+	fn     func() (T, error)
 	l      []chan [2]any
 	state  int
 	gen    int
-	result any
+	result T
 	ttl    time.Duration
 	grace  time.Duration
 	added  time.Time
 }
 
 // NewQueuedRunner for the given function "fn"
-func NewQueuedRunner(fn RunnerFn) *QueuedRunner {
-	return &QueuedRunner{
+func NewQueuedRunner[T any](fn func() (T, error)) *QueuedRunner[T] {
+	return &QueuedRunner[T]{
 		mu: new(sync.Mutex),
 		fn: fn,
 	}
@@ -52,8 +52,8 @@ func NewQueuedRunner(fn RunnerFn) *QueuedRunner {
 // ttl+grace.  If the result is older than ttl but younger than grace+ttl,
 // a cached result is returned and a call to "fn" is made concurrently,
 // refreshing the cached result.
-func NewCachedQueuedRunner(fn RunnerFn, ttl time.Duration, grace time.Duration) *QueuedRunner {
-	return &QueuedRunner{
+func NewCachedQueuedRunner[T any](fn func() (T, error), ttl time.Duration, grace time.Duration) *QueuedRunner[T] {
+	return &QueuedRunner[T]{
 		mu:    new(sync.Mutex),
 		fn:    fn,
 		ttl:   ttl,
@@ -61,12 +61,7 @@ func NewCachedQueuedRunner(fn RunnerFn, ttl time.Duration, grace time.Duration) 
 	}
 }
 
-// RunTimeout runs or queues until timeout for the next result of "fn". If
-// timeout is zero, return immediately with response or ErrRunnerTimeout when
-// no result is available.  If timeout is positive return ErrRunnerTimeout
-// when timeout occurs.  Wait for result when timeout is negative.
-// Can be called from mulitple goroutines ensuring only one invocation of "fn"
-// is active at a time.
+
 /*func (qr *QueuedRunner) RunTimeout(timeout time.Duration) (any, error) {
 	return qr.run(timeout, false)
 }
@@ -92,56 +87,71 @@ func (qr *QueuedRunner) RunCached() (any, error) {
 	return qr.run(-1, true)
 }*/
 
-type UncachedQueuedRunner struct{
-	qr *QueuedRunner
+type UncachedQueuedRunner[T any] struct{
+	qr *QueuedRunner[T]
 }
 
-func (u UncachedQueuedRunner) TryRun() (any, error) {
+func (u UncachedQueuedRunner[T]) TryRun() (T, error) {
 	return u.qr.run(context.Background(), 0, true)
 }
 
-func (u UncachedQueuedRunner) Run() (any, error) {
+// Run or queue for the next result of "fn"
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (u UncachedQueuedRunner[T]) Run() (T, error) {
 	return u.qr.run(context.Background(), -1, true)
 }
 
-func (u UncachedQueuedRunner) RunWithContext(ctx context.Context) (any, error) {
+func (u UncachedQueuedRunner[T]) RunWithContext(ctx context.Context) (T, error) {
 	return u.qr.run(ctx, -1, true)
 }
 
-func (u UncachedQueuedRunner) RunWithTimeout(timeout time.Duration) (any, error) {
+// RunTimeout runs or queues until timeout for the next result of "fn". If
+// timeout is zero, return immediately with response or ErrRunnerTimeout when
+// no result is available.  If timeout is positive return ErrRunnerTimeout
+// when timeout occurs.  Wait for result when timeout is negative.
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (u UncachedQueuedRunner[T]) RunWithTimeout(timeout time.Duration) (T, error) {
 	return u.qr.run(context.Background(), timeout, true)
 }
 
-func (qr *QueuedRunner) TryRun() (any, error) {
+func (qr *QueuedRunner[T]) TryRun() (T, error) {
 	return qr.run(context.Background(), 0, false)
 }
 
-func (qr *QueuedRunner) Run() (any, error) {
+func (qr *QueuedRunner[T]) Run() (T, error) {
 	return qr.run(context.Background(), -1, false)
 }
 
-func (qr *QueuedRunner) RunWithContext(ctx context.Context) (any, error) {
+func (qr *QueuedRunner[T]) RunWithContext(ctx context.Context) (T, error) {
 	return qr.run(ctx, -1, false)
 }
 
-func (qr *QueuedRunner) RunWithTimeout(timeout time.Duration) (any, error) {
+// RunTimeout runs or queues until timeout for the next result of "fn". If
+// timeout is zero, return immediately with response or ErrRunnerTimeout when
+// no result is available.  If timeout is positive return ErrRunnerTimeout
+// when timeout occurs.  Wait for result when timeout is negative.
+// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// is active at a time.
+func (qr *QueuedRunner[T]) RunWithTimeout(timeout time.Duration) (T, error) {
 	return qr.run(context.Background(), timeout, false)
 }
 
-func (qr *QueuedRunner) NoCache() UncachedQueuedRunner {
-	return UncachedQueuedRunner{qr}
+func (qr *QueuedRunner[T]) NoCache() UncachedQueuedRunner[T] {
+	return UncachedQueuedRunner[T]{qr}
 }
 
-func (qr *QueuedRunner) run(ctx context.Context, timeout time.Duration, noCache bool) (any, error) {
+func (qr *QueuedRunner[T]) run(ctx context.Context, timeout time.Duration, noCache bool) (T, error) {
 	var gen int
 	qr.mu.Lock()
 
-	if !noCache && qr.ttl > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl {
+	if !noCache && qr.ttl > 0  && time.Since(qr.added) <= qr.ttl {
 		defer qr.mu.Unlock()
 		return qr.result, nil
 	}
 
-	if !noCache && qr.grace > 0 && qr.result != nil && time.Since(qr.added) <= qr.ttl+qr.grace {
+	if !noCache && qr.grace > 0 && time.Since(qr.added) <= qr.ttl+qr.grace {
 		defer qr.mu.Unlock()
 		if qr.state == running {
 			return qr.result, nil
@@ -149,7 +159,8 @@ func (qr *QueuedRunner) run(ctx context.Context, timeout time.Duration, noCache 
 
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			v := new(T)
+			return *v, ctx.Err()
 		default:
 		}
 
@@ -166,7 +177,8 @@ func (qr *QueuedRunner) run(ctx context.Context, timeout time.Duration, noCache 
 	} else {
 		select {
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			v := new(T)
+			return *v, ctx.Err()
 		default:
 		}
 
@@ -182,50 +194,54 @@ func (qr *QueuedRunner) run(ctx context.Context, timeout time.Duration, noCache 
 		t := time.NewTimer(timeout)
 		select {
 		case v := <-r:
-			return rvalue(v)
+			return qr.rvalue(v)
 		case <-t.C:
 			qr.abort(gen, r)
-			return nil, ErrRunnerTimedout
+			v := new(T)
+			return *v, ErrRunnerTimedout
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			v := new(T)
+			return *v, ctx.Err()
 		}
 	} else if timeout == 0 {
 		select {
 		case v := <-r:
-			return rvalue(v)
+			return qr.rvalue(v)
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			v := new(T)
+			return *v, ctx.Err()
 		default:
 			qr.abort(gen, r)
-			return nil, ErrRunnerTimedout
+			v := new(T)
+			return *v, ErrRunnerTimedout
 		}
 	}
 
 	select {
 		case v := <-r:
-			return rvalue(v)
+			return qr.rvalue(v)
 		case <-ctx.Done():
-			return nil, ctx.Err()
+			v := new(T)
+			return *v, ctx.Err()
 	}
 }
 
-func rvalue(v [2]any) (any, error) {
+func (qr *QueuedRunner[T]) rvalue(v [2]any) (T, error) {
 	if v[1] != nil {
-		return v[0], v[1].(error)
+		return v[0].(T), v[1].(error)
 	}
-	return v[0], nil
+	return v[0].(T), nil
 }
 
-func (qr *QueuedRunner) Flush() {
+func (qr *QueuedRunner[T]) Flush() {
 	if qr.ttl > 0 || qr.grace > 0 {
 		qr.mu.Lock()
-		qr.result = nil
 		qr.added = zeroTime
 		qr.mu.Unlock()
 	}
 }
 
-func (qr *QueuedRunner) IsRunning() bool {
+func (qr *QueuedRunner[T]) IsRunning() bool {
 	var isrunning bool
 	qr.mu.Lock()
 	isrunning = qr.state == running
@@ -233,7 +249,7 @@ func (qr *QueuedRunner) IsRunning() bool {
 	return isrunning
 }
 
-func (qr *QueuedRunner) pump() {
+func (qr *QueuedRunner[T]) pump() {
 	v, err := qr.fn()
 
 	qr.mu.Lock()
@@ -252,7 +268,7 @@ func (qr *QueuedRunner) pump() {
 	qr.state = stopped
 }
 
-func (qr *QueuedRunner) abort(gen int, r chan [2]any) {
+func (qr *QueuedRunner[T]) abort(gen int, r chan [2]any) {
 	// Best effort cleanup if client aborts, otherwise GC handles it
 	if qr.mu.TryLock() {
 		defer qr.mu.Unlock()

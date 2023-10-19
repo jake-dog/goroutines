@@ -10,13 +10,13 @@ import (
 func TestQueuedRunner(t *testing.T) {
 	finished := new(atomic.Uint64)
 	tests := []struct {
-		fn    func(*QueuedRunner)
+		fn    func(*QueuedRunner[string])
 		sleep time.Duration
 		gen   int
 		qlen  int
 	}{
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -31,7 +31,7 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 1,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -46,12 +46,12 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 2,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.TryRun()
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
-				if v != nil {
+				if v != "" {
 					t.Errorf("Expected v=nil but received v=%v", v)
 				}
 				finished.Add(1)
@@ -61,12 +61,12 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 2,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.RunWithTimeout(5*time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
-				if v != nil {
+				if v != "" {
 					t.Errorf("Expected v=nil but received v=%v", v)
 				}
 				finished.Add(1)
@@ -76,7 +76,7 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 2,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -91,7 +91,7 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 3,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.RunWithTimeout(1 * time.Second)
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -106,7 +106,7 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 1,
 		},
 		{
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -121,14 +121,14 @@ func TestQueuedRunner(t *testing.T) {
 			qlen: 2,
 		},
 		{
-			fn: func(_ *QueuedRunner) {
+			fn: func(_ *QueuedRunner[string]) {
 			},
 			sleep: 0,
 			gen: 2,
 			qlen: 0,
 		},
 	}
-	q := NewQueuedRunner(func() (any, error) {
+	q := NewQueuedRunner(func() (string, error) {
 		time.Sleep(100 * time.Millisecond)
 		return "foo", nil
 	})
@@ -157,7 +157,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 	finished := new(atomic.Uint64)
 	tests := []struct {
 		name    string
-		fn      func(*QueuedRunner)
+		fn      func(*QueuedRunner[string])
 		sleep   time.Duration
 		gen     int
 		qlen    int
@@ -165,7 +165,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 	}{
 		{
 			name: "t1_uncached",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -182,7 +182,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t2_uncached",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -199,12 +199,12 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t3_uncached_immediate",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.RunWithTimeout(0)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
-				if v != nil {
+				if v != "" {
 					t.Errorf("Expected v=nil but received v=%v", v)
 				}
 				finished.Add(1)
@@ -216,12 +216,12 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t4_uncached_nearimmediate",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.RunWithTimeout(20*time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
-				if v != nil {
+				if v != "" {
 					t.Errorf("Expected v=nil but received v=%v", v)
 				}
 				finished.Add(1)
@@ -233,7 +233,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t5_cached",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.TryRun()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -250,7 +250,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t6_cached",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -267,7 +267,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t7_cached_grace",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -284,7 +284,7 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t8_cached",
-			fn: func(qr *QueuedRunner) {
+			fn: func(qr *QueuedRunner[string]) {
 				v, err := qr.Run()
 				if v != "foo" {
 					t.Errorf("Expected foo received=%v", v)
@@ -301,14 +301,14 @@ func TestCachedQueuedRunner(t *testing.T) {
 		},
 		{
 			name: "t9",
-			fn: func(_ *QueuedRunner) {
+			fn: func(_ *QueuedRunner[string]) {
 			},
 			sleep: 0,
 			gen: 2,
 			qlen: 0,
 		},
 	}
-	q := NewCachedQueuedRunner(func() (any, error) {
+	q := NewCachedQueuedRunner(func() (string, error) {
 		time.Sleep(200 * time.Millisecond)
 		return "foo", nil
 	}, 100 * time.Millisecond, 100 * time.Millisecond)
