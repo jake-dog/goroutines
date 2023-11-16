@@ -21,11 +21,14 @@ $ go get github.com/jake-dog/goroutines
 
 ## Usage example
 
+#### Map
+
 ```go
 package main
 
 import (
 	"fmt"
+
 	"github.com/jake-dog/goroutines"
 )
 
@@ -39,11 +42,42 @@ func main() {
 
 	var sum int
 	for r := range results { // All results must be consumed
+		fmt.Println("Received:", r)
 		sum += r
-	})
+	}
 	fmt.Println("Sum of all strings processed:", sum)
 }
 ```
+
+Try it on [playground](https://go.dev/play/p/E1glA7I1TCL).
+
+#### Reduce
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/jake-dog/goroutines"
+)
+
+func main() {
+	data := []string{"one", "two", "three", "four", "five", "six", "seven"}
+
+	sum, _ := goroutines.Reduce(2, func(s string) (int, error) {
+		fmt.Println("Processing:", s)
+		return len(s), nil
+	}, func(a, b int) (int, error) {
+		fmt.Println("Received:", b)
+		return a + b, nil
+	}, data)
+
+	fmt.Println("Sum of all strings processed:", sum)
+}
+```
+
+Try it on [playground](https://go.dev/play/p/BIgC0sUrUnu).
 
 ## Performance notes
 
