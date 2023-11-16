@@ -14,7 +14,7 @@ func TestTimedLock(t *testing.T) {
 		elapsed time.Duration
 	}{
 		{
-			name: "lock no timeout succeds",
+			name: "lock no timeout succeeds",
 			op: func(tl *TimedMutex) {
 				tl.Lock()
 			},

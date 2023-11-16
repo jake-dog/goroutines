@@ -14,7 +14,7 @@ const (
 
 var zeroTime = time.Time{}
 
-// ErrRunnerTimedout means a timeout occured waiting for result of "fn"
+// ErrRunnerTimedout means a timeout occurred waiting for result of "fn"
 var ErrRunnerTimedout = errors.New("runner timed out")
 
 // QueuedRunner serializes access to a function, allowing multiple goroutines
@@ -89,14 +89,14 @@ func (qr *QueuedRunner[T]) TryRun() (T, error) {
 }
 
 // Run or queue for the next result of "fn"
-// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// Can be called from multiple goroutines ensuring only one invocation of "fn"
 // is active at a time.
 func (qr *QueuedRunner[T]) Run() (T, error) {
 	return qr.run(context.Background(), -1, false)
 }
 
 // RunWithContextruns or queues for the next result of "fn".
-// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// Can be called from multiple goroutines ensuring only one invocation of "fn"
 // is active at a time.
 func (qr *QueuedRunner[T]) RunWithContext(ctx context.Context) (T, error) {
 	return qr.run(ctx, -1, false)
@@ -106,7 +106,7 @@ func (qr *QueuedRunner[T]) RunWithContext(ctx context.Context) (T, error) {
 // timeout is zero, return immediately with response or ErrRunnerTimeout when
 // no result is available.  If timeout is positive return ErrRunnerTimeout
 // when timeout occurs.  Wait for result when timeout is negative.
-// Can be called from mulitple goroutines ensuring only one invocation of "fn"
+// Can be called from multiple goroutines ensuring only one invocation of "fn"
 // is active at a time.
 func (qr *QueuedRunner[T]) RunWithTimeout(timeout time.Duration) (T, error) {
 	return qr.run(context.Background(), timeout, false)
