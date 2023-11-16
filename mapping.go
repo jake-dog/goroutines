@@ -122,6 +122,7 @@ func SearchUnordered[I any, R any](qlen int, fn func(I) (R, error), args []I) (R
 }
 
 // Reduce returns a single value as the result of Map
+// The reduction function "fni" runs serially as results are returned.
 //
 // If an error is returned, new arguments will not be processed and execution
 // will return when all goroutines finish.
@@ -135,6 +136,7 @@ func ReduceUnordered[I any, R any](qlen int, fn func(I) (R, error), fni func(R, 
 }
 
 // Inject is like Reduce except an initial value can be supplied.
+// The reduction function "fni" runs serially as results are returned.
 //
 // If an error is returned, new arguments will not be processed and execution
 // will return when all goroutines finish.
