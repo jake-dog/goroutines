@@ -1,13 +1,13 @@
 package goroutines
 
 import (
-	"testing"
-	"time"
 	"runtime"
 	"sync/atomic"
+	"testing"
+	"time"
 )
 
-type mystruct struct{
+type mystruct struct {
 	biz string
 	boz int
 }
@@ -32,8 +32,8 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 0,
-			gen: 1,
-			qlen: 1,
+			gen:   1,
+			qlen:  1,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
@@ -47,8 +47,8 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 0,
-			gen: 1,
-			qlen: 2,
+			gen:   1,
+			qlen:  2,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
@@ -62,12 +62,12 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 0,
-			gen: 1,
-			qlen: 2,
+			gen:   1,
+			qlen:  2,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
-				v, err := qr.RunWithTimeout(5*time.Millisecond)
+				v, err := qr.RunWithTimeout(5 * time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -77,8 +77,8 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 0,
-			gen: 1,
-			qlen: 2,
+			gen:   1,
+			qlen:  2,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
@@ -92,8 +92,8 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 500 * time.Millisecond,
-			gen: 1,
-			qlen: 3,
+			gen:   1,
+			qlen:  3,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
@@ -107,8 +107,8 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 0,
-			gen: 2,
-			qlen: 1,
+			gen:   2,
+			qlen:  1,
 		},
 		{
 			fn: func(qr *QueuedRunner[*mystruct]) {
@@ -122,20 +122,20 @@ func TestQueuedRunner(t *testing.T) {
 				finished.Add(1)
 			},
 			sleep: 200 * time.Millisecond,
-			gen: 2,
-			qlen: 2,
+			gen:   2,
+			qlen:  2,
 		},
 		{
 			fn: func(_ *QueuedRunner[*mystruct]) {
 			},
 			sleep: 0,
-			gen: 2,
-			qlen: 0,
+			gen:   2,
+			qlen:  0,
 		},
 	}
 	q := NewQueuedRunner(func() (*mystruct, error) {
 		time.Sleep(100 * time.Millisecond)
-		return &mystruct{"foo",10}, nil
+		return &mystruct{"foo", 10}, nil
 	})
 	for _, tt := range tests {
 		go tt.fn(q)
@@ -180,9 +180,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 0,
-			gen: 1,
-			qlen: 1,
+			sleep:   0,
+			gen:     1,
+			qlen:    1,
 			running: true,
 		},
 		{
@@ -197,9 +197,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 0,
-			gen: 1,
-			qlen: 2,
+			sleep:   0,
+			gen:     1,
+			qlen:    2,
 			running: true,
 		},
 		{
@@ -214,15 +214,15 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 0,
-			gen: 1,
-			qlen: 2,
+			sleep:   0,
+			gen:     1,
+			qlen:    2,
 			running: true,
 		},
 		{
 			name: "t4_uncached_nearimmediate",
 			fn: func(qr *QueuedRunner[string]) {
-				v, err := qr.RunWithTimeout(20*time.Millisecond)
+				v, err := qr.RunWithTimeout(20 * time.Millisecond)
 				if err != ErrRunnerTimedout {
 					t.Errorf("Expected ErrRunnerTimedout received=%v", err)
 				}
@@ -231,9 +231,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 250 * time.Millisecond,
-			gen: 1,
-			qlen: 3,
+			sleep:   250 * time.Millisecond,
+			gen:     1,
+			qlen:    3,
 			running: true,
 		},
 		{
@@ -248,9 +248,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 0,
-			gen: 1,
-			qlen: 0,
+			sleep:   0,
+			gen:     1,
+			qlen:    0,
 			running: false,
 		},
 		{
@@ -265,9 +265,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 50 * time.Millisecond,
-			gen: 1,
-			qlen: 0,
+			sleep:   50 * time.Millisecond,
+			gen:     1,
+			qlen:    0,
 			running: false,
 		},
 		{
@@ -282,9 +282,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 250 * time.Millisecond,
-			gen: 2,
-			qlen: 0,
+			sleep:   250 * time.Millisecond,
+			gen:     2,
+			qlen:    0,
 			running: true,
 		},
 		{
@@ -299,9 +299,9 @@ func TestCachedQueuedRunner(t *testing.T) {
 				}
 				finished.Add(1)
 			},
-			sleep: 250 * time.Millisecond,
-			gen: 2,
-			qlen: 0,
+			sleep:   250 * time.Millisecond,
+			gen:     2,
+			qlen:    0,
 			running: false,
 		},
 		{
@@ -309,14 +309,14 @@ func TestCachedQueuedRunner(t *testing.T) {
 			fn: func(_ *QueuedRunner[string]) {
 			},
 			sleep: 0,
-			gen: 2,
-			qlen: 0,
+			gen:   2,
+			qlen:  0,
 		},
 	}
 	q := NewCachedQueuedRunner(func() (string, error) {
 		time.Sleep(200 * time.Millisecond)
 		return "foo", nil
-	}, 100 * time.Millisecond, 100 * time.Millisecond)
+	}, 100*time.Millisecond, 100*time.Millisecond)
 	for _, tt := range tests {
 		go tt.fn(q)
 		runtime.Gosched()

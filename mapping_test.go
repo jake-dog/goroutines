@@ -19,7 +19,7 @@ var (
 		"geeeeeeee", "geeeeeeeee", "geeeeeeeeee", "geeeeeeeeeee", "geeeeeeeeeeee", "geeeeeeeeeeeee"}
 
 	testInts = []int{
-		 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
 		19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
 		37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
 		55, 56, 57, 58, 59, 60,
@@ -42,7 +42,7 @@ func TestSearch(t *testing.T) {
 						time.Sleep(sleepTime)
 					}
 					if len(s) == 5 {
-						return len(s)+100, ErrSearchSuccess
+						return len(s) + 100, ErrSearchSuccess
 					}
 					return 0, nil
 				}, testStrings)
@@ -63,7 +63,7 @@ func TestSearch(t *testing.T) {
 						time.Sleep(sleepTime)
 					}
 					if len(s) == 5 {
-						return len(s)+100, ErrSearchSuccess
+						return len(s) + 100, ErrSearchSuccess
 					}
 					return 0, nil
 				}, testStrings)
@@ -255,7 +255,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					return append(a, strconv.Itoa(b)), nil
 				}, testInts)
@@ -280,7 +280,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					return append(a, strconv.Itoa(b)), nil
 				}, testInts)
@@ -309,7 +309,7 @@ func TestInject(t *testing.T) {
 					if n%15 == 0 {
 						return n, testErr
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					return append(a, strconv.Itoa(b)), nil
 				}, testInts)
@@ -329,7 +329,7 @@ func TestInject(t *testing.T) {
 					if n%15 == 0 {
 						return n, testErr
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					return append(a, strconv.Itoa(b)), nil
 				}, testInts)
@@ -346,7 +346,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -374,7 +374,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -394,7 +394,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -415,7 +415,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -436,7 +436,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -457,7 +457,7 @@ func TestInject(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return n+10, nil
+					return n + 10, nil
 				}, func(a []string, b int) ([]string, error) {
 					if b%25 == 0 {
 						return a, testErr
@@ -502,7 +502,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -527,7 +527,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -553,7 +553,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -579,7 +579,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -601,7 +601,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -626,7 +626,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -652,7 +652,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -678,7 +678,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -700,7 +700,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -725,7 +725,7 @@ func TestMap(t *testing.T) {
 					if n%2 == 1 {
 						time.Sleep(sleepTime)
 					}
-					return strconv.Itoa(n+10)
+					return strconv.Itoa(n + 10)
 				}, testInts)
 
 				v := make([]string, 0, len(testInts))
@@ -979,7 +979,7 @@ func TestReduce(t *testing.T) {
 					}
 					return len(s), nil
 				}, func(n, m int) (int, error) {
-					return n+m, nil
+					return n + m, nil
 				}, testStrings)
 
 				if err != nil {
@@ -1000,7 +1000,7 @@ func TestReduce(t *testing.T) {
 					}
 					return len(s), nil
 				}, func(n, m int) (int, error) {
-					return n+m, nil
+					return n + m, nil
 				}, testStrings)
 
 				if err != nil {

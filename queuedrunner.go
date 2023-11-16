@@ -58,7 +58,7 @@ func NewCachedQueuedRunner[T any](fn func() (T, error), ttl time.Duration, grace
 }
 
 // UncachedQueuedRunner wraps a QueuedRunner and bypasses caching
-type UncachedQueuedRunner[T any] struct{
+type UncachedQueuedRunner[T any] struct {
 	qr *QueuedRunner[T]
 }
 
@@ -193,11 +193,11 @@ func (qr *QueuedRunner[T]) run(ctx context.Context, timeout time.Duration, noCac
 	}
 
 	select {
-		case v := <-r:
-			return qr.rvalue(v)
-		case <-ctx.Done():
-			v := new(T)
-			return *v, ctx.Err()
+	case v := <-r:
+		return qr.rvalue(v)
+	case <-ctx.Done():
+		v := new(T)
+		return *v, ctx.Err()
 	}
 }
 
