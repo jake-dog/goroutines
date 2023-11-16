@@ -1,4 +1,4 @@
-package workers
+package goroutines
 
 import (
 	"context"
@@ -57,6 +57,7 @@ func NewCachedQueuedRunner[T any](fn func() (T, error), ttl time.Duration, grace
 	}
 }
 
+// UncachedQueuedRunner wraps a QueuedRunner and bypasses caching
 type UncachedQueuedRunner[T any] struct{
 	qr *QueuedRunner[T]
 }
