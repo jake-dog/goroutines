@@ -3,6 +3,7 @@ package goroutines
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"testing"
@@ -1009,6 +1010,95 @@ func TestReduce(t *testing.T) {
 
 				if v != 218 {
 					t.Errorf("Expected string len sum=%v but received sum=%v", 218, v)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tt.cancelTime > 0 {
+				var cancel func()
+				ctx, cancel = context.WithCancel(context.Background())
+				time.AfterFunc(tt.cancelTime, func() {
+					cancel()
+				})
+			}
+			tt.fn(ctx)
+		})
+	}
+}
+
+// Modified example from code x/sync/errgroup
+// https://pkg.go.dev/golang.org/x/sync/errgroup
+var (
+	Web   = fakeSearch("web")
+	Image = fakeSearch("image")
+	Video = fakeSearch("video")
+)
+
+type aResult string
+type aSearch func(ctx context.Context, query string) (aResult, error)
+
+func fakeSearch(kind string) aSearch {
+	return func(_ context.Context, query string) (aResult, error) {
+		return aResult(fmt.Sprintf("%s result for %q", kind, query)), nil
+	}
+}
+
+func TestCollect(t *testing.T) {
+	expectV := []string{
+		fmt.Sprintf("%s result for %q", "web", "golang"),
+		fmt.Sprintf("%s result for %q", "image", "golang"),
+		fmt.Sprintf("%s result for %q", "video", "golang"),
+	}
+	tests := []struct {
+		name       string
+		fn         func(context.Context)
+		cancelTime time.Duration
+		timeLimit  time.Duration
+	}{
+		{
+			name: "basic errgroup parallel",
+			fn: func(ctx context.Context) {
+				results, err := Collect(3, func(search aSearch) (aResult, error) {
+					return search(ctx, "golang")
+				}, []aSearch{Web, Image, Video})
+
+				if err != nil {
+					t.Fatalf("Expected no error")
+				}
+
+				if len(results) != 3 {
+					t.Fatalf("Expected result length=%v but length=%v", 3, len(results))
+				}
+
+				for i, s := range results {
+					if string(s) != expectV[i] {
+						t.Errorf("Expected string=%v but received string=%v", expectV[i], s)
+					}
+				}
+			},
+		},
+		{
+			name: "basic unordered errgroup parallel",
+			fn: func(ctx context.Context) {
+				results, err := Collect(3, func(search aSearch) (aResult, error) {
+					return search(ctx, "golang")
+				}, []aSearch{Web, Image, Video})
+
+				if err != nil {
+					t.Fatalf("Expected no error")
+				}
+
+				if len(results) != 3 {
+					t.Fatalf("Expected result length=%v but length=%v", 3, len(results))
+				}
+
+				for i, s := range results {
+					if string(s) != expectV[i] {
+						t.Errorf("Expected string=%v but received string=%v", expectV[i], s)
+					}
 				}
 			},
 		},

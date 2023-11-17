@@ -135,6 +135,36 @@ func ReduceUnordered[I any, R any](qlen int, fn func(I) (R, error), fni func(R, 
 	return ReduceUnorderedWithContext(context.Background(), qlen, fn, fni, args)
 }
 
+// Collect is Map but returns a slice instead of a channel.
+//
+// If an error is returned, new arguments will not be processed and execution
+// will return when all goroutines finish.
+func Collect[I any, R any](qlen int, fn func(I) (R, error), args []I) ([]R, error) {
+	return CollectWithContext(context.Background(), qlen, fn, args)
+}
+
+// CollectWithContext is Collect but with a context.
+func CollectWithContext[I any, R any](ctx context.Context, qlen int, fn func(I) (R, error), args []I) ([]R, error) {
+	return InjectWithContext(ctx, qlen, make([]R, 0, len(args)), fn, func(a []R, b R) ([]R, error) {
+		return append(a, b), nil
+	}, args)
+}
+
+// CollectUnordered is MapUnordered but returns a slice instead of a channel.
+//
+// If an error is returned, new arguments will not be processed and execution
+// will return when all goroutines finish.
+func CollectUnordered[I any, R any](qlen int, fn func(I) (R, error), args []I) ([]R, error) {
+	return CollectUnorderedWithContext(context.Background(), qlen, fn, args)
+}
+
+// CollectUnorderedWithContext is CollectUnordered but with a context.
+func CollectUnorderedWithContext[I any, R any](ctx context.Context, qlen int, fn func(I) (R, error), args []I) ([]R, error) {
+	return InjectUnorderedWithContext(ctx, qlen, make([]R, 0, len(args)), fn, func(a []R, b R) ([]R, error) {
+		return append(a, b), nil
+	}, args)
+}
+
 // Inject is like Reduce except an initial value can be supplied.
 // The reduction function "fni" runs serially as results are returned.
 //
