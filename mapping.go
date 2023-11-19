@@ -239,6 +239,7 @@ func search[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 	var v R
 	var err error
 	hasError := make(chan error, len(args))
+	ctx, cancel := context.WithCancel(ctx)
 
 	mapFn := mapUnordered[I, *F[R]]
 	if ordered {
@@ -254,6 +255,7 @@ func search[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 	}, args, hasError)
 	for r := range results {
 		if err != nil {
+			cancel()
 			continue // consume all results
 		} else {
 			select {
@@ -283,6 +285,7 @@ func inject[I any, R any, A any](ctx context.Context, ordered bool, qlen int, a 
 	var v R
 	var err error
 	hasError := make(chan error, len(args))
+	ctx, cancel := context.WithCancel(ctx)
 
 	mapFn := mapUnordered[I, *F[R]]
 	if ordered {
@@ -302,6 +305,7 @@ func inject[I any, R any, A any](ctx context.Context, ordered bool, qlen int, a 
 		}
 		v, err = r.Return()
 		if err != nil {
+			cancel()
 			continue
 		} else {
 			select {
@@ -325,6 +329,7 @@ func inject[I any, R any, A any](ctx context.Context, ordered bool, qlen int, a 
 
 func mapErr[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I) (R, error), args []I) func() (R, error, bool) {
 	hasError := make(chan error, len(args))
+	ctx, cancel := context.WithCancel(ctx)
 
 	mapFn := mapUnordered[I, *F[R]]
 	if ordered {
@@ -350,10 +355,13 @@ func mapErr[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 			return
 		}
 		vn, errn = r.Return()
-		if errn == nil {
+		if errn != nil {
+			ok = false
+			cancel()
+		} else {
 			select {
 			case <-ctx.Done():
-				return vn, ctx.Err(), ok
+				return vn, ctx.Err(), false
 			default:
 			}
 		}

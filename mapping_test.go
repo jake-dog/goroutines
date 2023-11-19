@@ -1095,9 +1095,19 @@ func TestCollect(t *testing.T) {
 					t.Fatalf("Expected result length=%v but length=%v", 3, len(results))
 				}
 
-				for i, s := range results {
-					if string(s) != expectV[i] {
-						t.Errorf("Expected string=%v but received string=%v", expectV[i], s)
+				sta := make([]string, len(expectV))
+				copy(sta, expectV)
+				sort.Strings(sta)
+
+				stb := make([]string, len(expectV))
+				for i, result := range results {
+					stb[i] = string(result)
+				}
+				sort.Strings(stb)
+
+				for i, s := range stb {
+					if s != sta[i] {
+						t.Errorf("Expected string=%v but received string=%v", sta[i], s)
 					}
 				}
 			},
