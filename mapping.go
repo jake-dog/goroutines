@@ -344,29 +344,34 @@ func mapErr[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 		return NewF(vn, errn)
 	}, args, hasError)
 
-	return func() (vn R, errn error, ok bool) {
-		var r *F[R]
-		select {
-		case <-ctx.Done():
-			return vn, ctx.Err(), ok
-		case r, ok = <-results:
-		}
-		if r == nil {
-			return
-		}
-		vn, errn = r.Return()
-		if errn != nil {
-			ok = false
-			cancel()
-		} else {
-			select {
-			case <-ctx.Done():
-				return vn, ctx.Err(), false
-			default:
+	return func(ctx context.Context, results <-chan *F[R], cancel func()) func() (R, error, bool) {
+		var done bool // closure for completion
+		return func() (vn R, errn error, ok bool) {
+			if done {
+				return
 			}
+			var r *F[R]
+			r, ok = <-results
+			if !ok || r == nil {
+				done = true
+				select {
+				case <-ctx.Done():
+					return vn, ctx.Err(), true
+				default:
+				}
+				return
+			}
+			vn, errn = r.Return()
+			if errn != nil {
+				cancel()
+				for _ = range results {
+					// consume all remaining workers
+				}
+				done = true
+			}
+			return vn, errn, ok
 		}
-		return vn, errn, ok
-	}
+	}(ctx, results, cancel)
 }
 
 func mapUnordered[I any, R any](ctx context.Context, qlen int, fn func(I) R, args []I, hasError <-chan error) <-chan R {

@@ -882,6 +882,7 @@ func TestMapErr(t *testing.T) {
 				for n, err, ok := next(); ok; n, err, ok = next() {
 					if err == testErr {
 						foundErr = true
+						break
 					}
 					v = append(v, n)
 				}
@@ -905,13 +906,18 @@ func TestMapErr(t *testing.T) {
 				}, testStrings)
 
 				v := make([]int, 0, len(testStrings))
+				var foundErr bool
 				for n, err, ok := next(); ok; n, err, ok = next() {
-					if err != nil {
-						t.Fatalf("Expected no error")
+					if err == context.Canceled {
+						foundErr = true
+						break
 					}
 					v = append(v, n)
 				}
 
+				if !foundErr {
+					t.Errorf("Expected an error")
+				}
 				if len(v) >= len(testStrings) {
 					t.Fatalf("Expected result slice len=%v < len=%v", len(testStrings), len(v))
 				}
@@ -934,13 +940,18 @@ func TestMapErr(t *testing.T) {
 				}, testStrings)
 
 				v := make([]int, 0, len(testStrings))
+				var foundErr bool
 				for n, err, ok := next(); ok; n, err, ok = next() {
-					if err != nil {
-						t.Fatalf("Expected no error")
+					if err == context.Canceled {
+						foundErr = true
+						break
 					}
 					v = append(v, n)
 				}
 
+				if !foundErr {
+					t.Errorf("Expected an error")
+				}
 				if len(v) >= len(testStrings) {
 					t.Fatalf("Expected result slice len=%v > len=%v", len(testStrings), len(v))
 				}
