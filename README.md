@@ -1,6 +1,6 @@
 # goroutines
 
-Concurrency package emulating a tiny subset of Python's threading module. Implements safe and simple concurrency patterns with abort-on-error and cancellation. Provides simple syntax with golang generics, using only the standard library.
+Concurrency package emulating a tiny subset of Python's threading module. Implements safe and simple concurrency patterns with abort-on-error and cancellation. Functionality similar to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight) with simpler syntax using golang generics.  Depends only on the standard library.
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/jake-dog/goroutines)](https://pkg.go.dev/github.com/jake-dog/goroutines)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jake-dog/goroutines)](https://goreportcard.com/report/github.com/jake-dog/goroutines)
@@ -8,9 +8,9 @@ Concurrency package emulating a tiny subset of Python's threading module. Implem
 
 ## Key features
 
-* Concurrent context/error-aware generic [map](https://en.wikipedia.org/wiki/Map_(higher-order_function)), [inject/reduce](https://en.wikipedia.org/wiki/Fold_(higher-order_function)), and more
-* Reentrant generic function result cache and serializer
-* Timed mutex implementation
+* Concurrent context/error-aware [map/collect](https://en.wikipedia.org/wiki/Map_(higher-order_function)), [inject/reduce](https://en.wikipedia.org/wiki/Fold_(higher-order_function)), etc.
+* Reentrant function coalescing and result cache
+* Mutex with lock timeout and context cancellation
 
 ## Installation
 
@@ -83,4 +83,4 @@ Try it on [playground](https://go.dev/play/p/BIgC0sUrUnu).
 
 The size of the goroutine pool provided to `Map`, `Inject`, `Reduce`, `Search`, etc. also limits the internal buffer size. Unordered functions require less buffering, and are frequently much faster, as the results do not need to be reordered.
 
-Unless a context is provided, error aware mapping functions can only terminate in-between processing of "slow" functions.  Context cancellation is preferred to terminate quickly.  Error aware mapping functions will return the first error encountered as the result of a function call or context cancellation.
+Unless a context is provided error aware mapping functions can only terminate in-between processing of "slow" functions.  Context cancellation is preferred to terminate quickly.  Error aware mapping functions will return the first error encountered as the result of a function call or context cancellation.
