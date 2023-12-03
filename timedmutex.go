@@ -1,6 +1,9 @@
 package goroutines
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 var s = struct{}{}
 
@@ -26,7 +29,7 @@ func NewVariableTimedMutex(limit int) *TimedMutex {
 	return l
 }
 
-// NewTimedMutex returns a TimedMutex similar to sync.Mutex
+// NewTimedMutex returns a TimedMutex similar to sync.Mutex.
 func NewTimedMutex() *TimedMutex {
 	return NewVariableTimedMutex(1)
 }
@@ -59,6 +62,19 @@ func (l *TimedMutex) internalLock(t time.Duration) bool {
 // LockTimeout returns true if the lock succeeded before timeout.
 func (l *TimedMutex) LockTimeout(timeout time.Duration) bool {
 	return l.internalLock(timeout)
+}
+
+// LockTimeout returns an error if context is cancelled before lock succeeds.
+func (l *TimedMutex) LockWithContext(ctx context.Context) error {
+	if l.c == nil {
+		panic("Uninitialized TimedMutex")
+	}
+	select {
+	case <-l.c:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // Lock locks the mutex.

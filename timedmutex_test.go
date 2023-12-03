@@ -1,6 +1,7 @@
 package goroutines
 
 import (
+	"context"
 	"testing"
 	"time"
 )
@@ -24,6 +25,16 @@ func TestTimedLock(t *testing.T) {
 			name: "lock with timeout fails",
 			op: func(tl *TimedMutex) {
 				if tl.LockTimeout(1 * time.Second) {
+					t.Errorf("Expected a timeout waiting for lock")
+				}
+			},
+			elapsed: 1 * time.Second,
+		},
+		{
+			name: "lock with context fails",
+			op: func(tl *TimedMutex) {
+				ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+				if err := tl.LockWithContext(ctx); err == nil {
 					t.Errorf("Expected a timeout waiting for lock")
 				}
 			},
