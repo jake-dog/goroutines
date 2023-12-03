@@ -1,3 +1,5 @@
+// Package goroutines provides the functionality of sync/errgroup and
+// sync/singleflight with a simpler interface.
 package goroutines
 
 import (
