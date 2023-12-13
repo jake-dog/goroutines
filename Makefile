@@ -1,6 +1,9 @@
-.PHONY: test coverage fmt
+.PHONY: test coverage fmt bench
 test:
 	@go test -race -cover -v ./...
+
+bench:
+	@go test -bench=. -benchmem
 
 coverage:
 	@go test ./... -coverprofile=cover.out
