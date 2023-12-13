@@ -10,6 +10,7 @@ import (
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
 	"github.com/thoas/go-funk"
+	"golang.org/x/sync/errgroup"
 )
 
 func sliceGenerator(size uint) []int64 {
@@ -44,6 +45,19 @@ func BenchmarkMap(b *testing.B) {
 		}
 	})
 
+	b.Run("sync/errgroup", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			results := make([]string, len(arr))
+			g := &errgroup.Group{}
+			for i, x := range arr {
+				g.Go(func() error {
+					results[i] = strconv.FormatInt(x, 10)
+					return nil
+				})
+			}
+		}
+	})
+
 	b.Run("lo.Map", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_ = lo.Map(arr, func(x int64, i int) string {
@@ -60,7 +74,7 @@ func BenchmarkMap(b *testing.B) {
 		}
 	})
 
-	b.Run("funk.Ma", func(b *testing.B) {
+	b.Run("funk.Map", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_ = funk.Map(arr, func(x int64) string {
 				return strconv.FormatInt(x, 10)
