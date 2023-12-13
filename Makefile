@@ -1,6 +1,6 @@
 .PHONY: test coverage
 test:
-	@go test -cover -v ./...
+	@go test -race -cover -v ./...
 
 coverage:
 	@go test ./... -coverprofile=cover.out
