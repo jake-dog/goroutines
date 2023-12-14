@@ -25,7 +25,7 @@ var (
 type Coalescer[T any] struct {
 	mu     *sync.Mutex
 	fn     func() (T, error)
-	l      []chan [2]any
+	l      []chan *F[T]
 	state  int
 	gen    int
 	result T
@@ -140,7 +140,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 		return qr.result, nil
 	}
 
-	r := make(chan [2]any, 1)
+	r := make(chan *F[T], 1)
 	if qr.state == running {
 		qr.l = append(qr.l, r)
 		gen = qr.gen
@@ -164,7 +164,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 		t := time.NewTimer(timeout)
 		select {
 		case v := <-r:
-			return qr.rvalue(v)
+			return v.Return()
 		case <-t.C:
 			qr.abort(gen, r)
 			v := new(T)
@@ -176,7 +176,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 	} else if timeout == 0 {
 		select {
 		case v := <-r:
-			return qr.rvalue(v)
+			return v.Return()
 		case <-ctx.Done():
 			v := new(T)
 			return *v, ctx.Err()
@@ -189,18 +189,11 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 
 	select {
 	case v := <-r:
-		return qr.rvalue(v)
+		return v.Return()
 	case <-ctx.Done():
 		v := new(T)
 		return *v, ctx.Err()
 	}
-}
-
-func (qr *Coalescer[T]) rvalue(v [2]any) (T, error) {
-	if v[1] != nil {
-		return v[0].(T), v[1].(error)
-	}
-	return v[0].(T), nil
 }
 
 // Flush cached result.
@@ -233,14 +226,14 @@ func (qr *Coalescer[T]) pump() {
 	}
 
 	for _, l := range qr.l {
-		l <- [2]any{v, err}
+		l <- NewF(v, err)
 		close(l)
 	}
 	qr.l = qr.l[:0]
 	qr.state = stopped
 }
 
-func (qr *Coalescer[T]) abort(gen int, r chan [2]any) {
+func (qr *Coalescer[T]) abort(gen int, r chan *F[T]) {
 	// Best effort cleanup if client aborts, otherwise GC handles it
 	if qr.mu.TryLock() {
 		defer qr.mu.Unlock()
