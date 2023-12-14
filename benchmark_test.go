@@ -182,12 +182,14 @@ func BenchmarkMap(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			results := make([]string, len(arr))
 			g := &errgroup.Group{}
+			g.SetLimit(nproc)
 			for i, x := range arr {
 				g.Go(func() error {
 					results[i] = strconv.FormatInt(x, 10)
 					return nil
 				})
 			}
+			_ = g.Wait()
 		}
 	})
 
@@ -199,7 +201,7 @@ func BenchmarkMap(b *testing.B) {
 		}
 	})
 
-	b.Run("lo.Map", func(b *testing.B) {
+	b.Run("lo.Map-singlethreaded", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_ = lo.Map(arr, func(x int64, i int) string {
 				return strconv.FormatInt(x, 10)
@@ -207,7 +209,7 @@ func BenchmarkMap(b *testing.B) {
 		}
 	})
 
-	b.Run("funk.Map", func(b *testing.B) {
+	b.Run("funk.Map-singlethreaded", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_ = funk.Map(arr, func(x int64) string {
 				return strconv.FormatInt(x, 10)
@@ -215,7 +217,7 @@ func BenchmarkMap(b *testing.B) {
 		}
 	})
 
-	b.Run("for", func(b *testing.B) {
+	b.Run("for-singlethreaded", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			results := make([]string, len(arr))
 
