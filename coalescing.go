@@ -23,7 +23,7 @@ var (
 // invocation is running at a time. Behavior is similar to sync/singleflight
 // with optional caching, and callers may individually abort early.
 type Coalescer[T any] struct {
-	mu     *sync.Mutex
+	mu     sync.Mutex
 	fn     func() (T, error)
 	l      []chan *F[T]
 	state  int
@@ -37,7 +37,6 @@ type Coalescer[T any] struct {
 // Coalesce the given function.
 func Coalesce[T any](fn func() (T, error)) *Coalescer[T] {
 	return &Coalescer[T]{
-		mu: new(sync.Mutex),
 		fn: fn,
 	}
 }
@@ -50,7 +49,6 @@ func Coalesce[T any](fn func() (T, error)) *Coalescer[T] {
 // will not be cached.
 func CacheCoalesce[T any](fn func() (T, error), ttl time.Duration, grace time.Duration) *Coalescer[T] {
 	return &Coalescer[T]{
-		mu:    new(sync.Mutex),
 		fn:    fn,
 		ttl:   ttl,
 		grace: grace,
@@ -113,6 +111,11 @@ func (qr *Coalescer[T]) NoCache() UncachedCoalescer[T] {
 }
 
 func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache bool) (T, error) {
+	if qr.fn == nil { // handle uninitialized
+		v := new(T)
+		return *v, nil
+	}
+
 	var gen int
 	qr.mu.Lock()
 
@@ -147,6 +150,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 	} else {
 		select {
 		case <-ctx.Done():
+			qr.mu.Unlock()
 			v := new(T)
 			return *v, ctx.Err()
 		default:
@@ -170,6 +174,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 			v := new(T)
 			return *v, ErrRunnerTimedout
 		case <-ctx.Done():
+			qr.abort(gen, r)
 			v := new(T)
 			return *v, ctx.Err()
 		}
@@ -178,6 +183,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 		case v := <-r:
 			return v.Return()
 		case <-ctx.Done():
+			qr.abort(gen, r)
 			v := new(T)
 			return *v, ctx.Err()
 		default:
@@ -191,6 +197,7 @@ func (qr *Coalescer[T]) run(ctx context.Context, timeout time.Duration, noCache 
 	case v := <-r:
 		return v.Return()
 	case <-ctx.Done():
+		qr.abort(gen, r)
 		v := new(T)
 		return *v, ctx.Err()
 	}
@@ -233,8 +240,8 @@ func (qr *Coalescer[T]) pump() {
 	qr.state = stopped
 }
 
+// Best effort cleanup if client aborts, otherwise GC handles it.
 func (qr *Coalescer[T]) abort(gen int, r chan *F[T]) {
-	// Best effort cleanup if client aborts, otherwise GC handles it
 	if qr.mu.TryLock() {
 		defer qr.mu.Unlock()
 		if gen != qr.gen || len(qr.l) == 0 {
@@ -254,7 +261,7 @@ func (qr *Coalescer[T]) abort(gen int, r chan *F[T]) {
 					break
 				}
 			}
-			if n > 0 {
+			if n >= 0 {
 				qr.l[n] = qr.l[len(qr.l)-1]
 				qr.l = qr.l[:len(qr.l)-1]
 				close(r)
