@@ -3,7 +3,7 @@ test:
 	@go test -race -cover -v ./...
 
 bench:
-	@go test -bench=. -benchmem
+	@go test -bench=. -benchmem $(if $(BENCHTIME),-benchtime=$(BENCHTIME))
 
 coverage:
 	@go test ./... -coverprofile=cover.out
