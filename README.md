@@ -1,12 +1,12 @@
 # goroutines
 
-Safe and simple "batteries included" concurrency with abort-on-error and cancellation. Functionality is similar to [sourcegraph/conc](https://github.com/sourcegraph/conc), providing ergonomic alternatives to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight). Only dependency is on the standard library.
-
-This package is not [yet](https://github.com/panjf2000/ants) [another](https://github.com/Jeffail/tunny) [goroutine](https://github.com/gammazero/workerpool) [pool](https://github.com/go-tomb/tomb), but instead a generic concurrency library taking full advantage of idiomatic go. Goroutines are lightweight compared to system threads and rarely require pool or lifecycle management. However, it may still be useful in conjunction with goroutine pools for specific patterns and style preferences.
-
 [![GoDoc](https://pkg.go.dev/badge/github.com/jake-dog/goroutines)](https://pkg.go.dev/github.com/jake-dog/goroutines)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jake-dog/goroutines)](https://goreportcard.com/report/github.com/jake-dog/goroutines)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jake-dog/goroutines/blob/master/LICENSE)
+
+Safe and simple "batteries included" concurrency with abort-on-error and cancellation. Functionality is similar to [sourcegraph/conc](https://github.com/sourcegraph/conc), providing ergonomic alternatives to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight). Only dependency is on the standard library.
+
+This package is not [yet](https://github.com/panjf2000/ants) [another](https://github.com/Jeffail/tunny) [goroutine](https://github.com/gammazero/workerpool) [pool](https://github.com/go-tomb/tomb), but instead a generic concurrency library taking full advantage of idiomatic go. Goroutines are lightweight compared to system threads and rarely require pool or lifecycle management. However, it may still be useful in conjunction with goroutine pools for specific patterns and style preferences.
 
 #### Install
 
