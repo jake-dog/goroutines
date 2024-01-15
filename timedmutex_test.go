@@ -22,6 +22,15 @@ func TestTimedLock(t *testing.T) {
 			elapsed: 100 * time.Millisecond,
 		},
 		{
+			name: "lock with no timeout fails",
+			op: func(tl *TimedMutex) {
+				if tl.TryLock() {
+					t.Errorf("Expected a timeout waiting for lock")
+				}
+			},
+			elapsed: 100 * time.Millisecond,
+		},
+		{
 			name: "lock with timeout fails",
 			op: func(tl *TimedMutex) {
 				if tl.LockTimeout(1 * time.Second) {
@@ -76,6 +85,16 @@ func TestTimedLock(t *testing.T) {
 			name: "unlock immediate",
 			op: func(tl *TimedMutex) {
 				tl.Unlock()
+			},
+			elapsed: 100 * time.Millisecond,
+		},
+		{
+			name: "lock with context succeeds",
+			op: func(tl *TimedMutex) {
+				ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+				if err := tl.LockWithContext(ctx); err != nil {
+					t.Errorf("Expected immediate lock with context")
+				}
 			},
 			elapsed: 100 * time.Millisecond,
 		},
