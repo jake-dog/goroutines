@@ -8,15 +8,15 @@ This package is not [yet](https://github.com/panjf2000/ants) [another](https://g
 [![Go Report Card](https://goreportcard.com/badge/github.com/jake-dog/goroutines)](https://goreportcard.com/report/github.com/jake-dog/goroutines)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jake-dog/goroutines/blob/master/LICENSE)
 
-#### Why the name `goroutines`?
-
-[_A package’s name provides context for its contents._](https://go.dev/blog/package-names) It follows from [`sync.Map`](https://pkg.go.dev/sync#Map), a synchronized map implementation, that `goroutines.Map` maps a function into one or more goroutines.
-
 #### Install
 
 ```shell
-go get github.com/sourcegraph/conc
+go get github.com/jake-dog/goroutines
 ```
+
+#### Why the name `goroutines`?
+
+[_A package’s name provides context for its contents._](https://go.dev/blog/package-names) It follows from [`sync.Map`](https://pkg.go.dev/sync#Map), a synchronized map implementation, that `goroutines.Map` maps a function into one or more goroutines.
 
 ## Key features
 
