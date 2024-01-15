@@ -1,6 +1,6 @@
 # goroutines
 
-Safe and simple "batteries included" concurrency with abort-on-error and cancellation. Functionality similar to [sourcegraph/conc](https://pkg.go.dev/github.com/sourcegraph/conc#section-readme), providing ergonomic alternatives to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight), using [golang generics](https://go.googlesource.com/proposal/+/HEAD/design/43651-type-parameters.md) (à la [samber/lo](https://github.com/samber/lo)).  Only dependency is on the standard library.
+Safe and simple "batteries included" concurrency with abort-on-error and cancellation. Functionality is similar to [sourcegraph/conc](https://github.com/sourcegraph/conc), providing ergonomic alternatives to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight). Only dependency is on the standard library.
 
 This package is not [yet](https://github.com/panjf2000/ants) [another](https://github.com/Jeffail/tunny) [goroutine](https://github.com/gammazero/workerpool) [pool](https://github.com/go-tomb/tomb), but instead a generic concurrency library taking full advantage of idiomatic go. Goroutines are lightweight compared to system threads and rarely require pool or lifecycle management. However, it may still be useful in conjunction with goroutine pools for specific patterns and style preferences.
 
@@ -12,6 +12,12 @@ This package is not [yet](https://github.com/panjf2000/ants) [another](https://g
 
 [_A package’s name provides context for its contents._](https://go.dev/blog/package-names) It follows from [`sync.Map`](https://pkg.go.dev/sync#Map), a synchronized map implementation, that `goroutines.Map` maps a function into one or more goroutines.
 
+#### Install
+
+```shell
+go get github.com/sourcegraph/conc
+```
+
 ## Key features
 
 * [Concurrent mapping](#concurrent-mapping)
@@ -20,13 +26,12 @@ This package is not [yet](https://github.com/panjf2000/ants) [another](https://g
 
 ## Concurrent Mapping
 
-Mapping functions are [higher-order functions](https://en.wikipedia.org/wiki/Higher-order_function) where each element is processed in a separate goroutine. The number of goroutines used is limited to the number specified as the first argument to all mapping functions, or second argument for context aware variants. Mapping functions provide similar capability to [`sync/errgroup`](https://pkg.go.dev/golang.org/x/sync/errgroup).
+Mapping functions are [higher-order functions](https://en.wikipedia.org/wiki/Higher-order_function) where each element is processed in a separate goroutine. The number of goroutines used is limited to the number specified as the first argument to all mapping functions, or second argument for context aware variants. Mapping functions provide safer alternatives to [`sync/errgroup`](https://pkg.go.dev/golang.org/x/sync/errgroup).
 
 ```go
 groceries, _ := goroutines.Collect(3, func(a string) (int, error) {
 	return len(a), nil
 }, []string{"eggs", "onion", "cheese"})
-
 // groceries == []int{4, 5, 6}
 ```
 
@@ -38,7 +43,6 @@ chars, _ := goroutines.Reduce(3, func(a string) ([]byte, error) {
 }, func(a []byte, b []byte) ([]byte, error) {
 	return append(a, b...), nil  // run serially (to flatten)
 }, []string{"eggs", "onion", "cheese"})
-
 // string(chars) == "eggsonioncheese"
 ```
 
@@ -290,6 +294,6 @@ ok      github.com/jake-dog/goroutines  145.602s
 
 ## Why?
 
-While it would be a stretch to suggest that golang makes concurrency difficult, it isn't always easy either. Channels are, for instance, [notoriously finicky](https://www.jtolio.com/2016/03/go-channels-are-bad-and-you-should-feel-bad/). Many languages have built-in libraries for common concurrency patterns. Python has the [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.ThreadPool) module, the original inspiration for this package, as well as a newer [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map) module. Then again, Python also has [asyncio](https://docs.python.org/3.10/library/asyncio.html) which suffers from the [color of functions](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/) issue. So a direct port of some other concurrency library to golang isn't necessarily logical, nor practical when considering golang's unusual type system and concurrency model.
+While it would be a stretch to suggest that golang makes concurrency difficult, it isn't always easy either. Channels are, for instance, [notoriously finicky](https://www.jtolio.com/2016/03/go-channels-are-bad-and-you-should-feel-bad/). Many languages have built-in libraries for common concurrency patterns. Python has the [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.pool.ThreadPool) module, the original inspiration for this package, as well as a newer [`concurrent.futures`](https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map) module. Then again, Python also has [`asyncio`](https://docs.python.org/3.10/library/asyncio.html) which suffers from the [color of functions](https://journal.stuffwithstuff.com/2015/02/01/what-color-is-your-function/) issue. So a direct port of some other concurrency library to golang isn't necessarily logical, nor practical when considering golang's unusual type system and concurrency model.
 
 These points are surely what drove google engineers to develop [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight), though some rough edges in the current implementations of said packages may be why they are not yet incorporated into the standard library. Golang 1.18 added [generics](https://go.googlesource.com/proposal/+/HEAD/design/43651-type-parameters.md) which, despite introducing an entirely new set of quirks, provides the basis for new concurrency tools in golang. Amongst those packages attempting to fill the concurrency tooling gap using generics are, [sourcegraph/conc](https://pkg.go.dev/github.com/sourcegraph/conc#section-readme) and this library. (If there are others, I can't find them.)
