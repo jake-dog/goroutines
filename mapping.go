@@ -110,6 +110,19 @@ func MapErrUnordered[I any, R any](qlen int, fn func(I) (R, error), args []I) fu
 	return MapErrUnorderedWithContext(context.Background(), qlen, fn, args)
 }
 
+// ForEach applys function to each element of slice.
+//
+// If an error is returned, new arguments will not be processed and execution
+// will return when all goroutines finish.
+func ForEach[I any](qlen int, fn func(I) error, args []I) error {
+	return ForEachWithContext(context.Background(), qlen, fn, args)
+}
+
+// ForEachUnordered is ForEach but elements are processed in random order.
+func ForEachUnordered[I any](qlen int, fn func(I) error, args []I) error {
+	return ForEachUnorderedWithContext(context.Background(), qlen, fn, args)
+}
+
 // Search with Map, returning the result if ErrSearchSuccess.
 //
 // If an error is returned, new arguments will not be processed and execution
@@ -179,6 +192,31 @@ func Inject[I any, R any, A any](qlen int, a A, fn func(I) (R, error), fni func(
 // InjectUnordered is Inject but results are processed as they complete.
 func InjectUnordered[I any, R any, A any](qlen int, a A, fn func(I) (R, error), fni func(A, R) (A, error), args []I) (A, error) {
 	return InjectUnorderedWithContext(context.Background(), qlen, a, fn, fni, args)
+}
+
+// ForEachWithContext applys function to each element of slice.
+func ForEachWithContext[I any](ctx context.Context, qlen int, fn func(I) error, args []I) error {
+	_, err := search(ctx, true, qlen, func(e I) (any, error) {
+		return nil, fn(e)
+	}, args)
+	if err == ErrSearchFailure {
+		return nil
+	} else if err == nil {
+		return ErrSearchSuccess
+	}
+	return err
+}
+
+func ForEachUnorderedWithContext[I any](ctx context.Context, qlen int, fn func(I) error, args []I) error {
+	_, err := search(ctx, false, qlen, func(e I) (any, error) {
+		return nil, fn(e)
+	}, args)
+	if err == ErrSearchFailure {
+		return nil
+	} else if err == nil {
+		return ErrSearchSuccess
+	}
+	return err
 }
 
 // MapWithContext is Map but with a context.

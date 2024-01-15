@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -1120,6 +1121,173 @@ func TestCollect(t *testing.T) {
 					if s != sta[i] {
 						t.Errorf("Expected string=%v but received string=%v", sta[i], s)
 					}
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tt.cancelTime > 0 {
+				var cancel func()
+				ctx, cancel = context.WithCancel(context.Background())
+				time.AfterFunc(tt.cancelTime, func() {
+					cancel()
+				})
+			}
+			tt.fn(ctx)
+		})
+	}
+}
+
+func TestForEach(t *testing.T) {
+	tests := []struct {
+		name       string
+		fn         func(context.Context)
+		cancelTime time.Duration
+		timeLimit  time.Duration
+	}{
+		{
+			name: "without an error",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEach(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != nil {
+					t.Fatalf("Expected no error")
+				}
+
+				if total != 45 {
+					t.Fatalf("Expected total=%v but found=%v", 45, total)
+				}
+			},
+		},
+		{
+			name: "with an error",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEach(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					if n == 4 {
+						return testErr
+					}
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != testErr {
+					t.Fatalf("Expected an error")
+				}
+
+				if total >= 45 {
+					t.Fatalf("Expected total<%v but found=%v", 45, total)
+				}
+			},
+		},
+		{
+			name: "with ErrSearchSuccess",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEach(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					if n == 4 {
+						return ErrSearchSuccess
+					}
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != ErrSearchSuccess {
+					t.Fatalf("Expected ErrSearchSuccess")
+				}
+
+				if total >= 45 {
+					t.Fatalf("Expected total<%v but found=%v", 45, total)
+				}
+			},
+		},
+		{
+			name: "unordered without an error",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEachUnordered(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != nil {
+					t.Fatalf("Expected no error")
+				}
+
+				if total != 45 {
+					t.Fatalf("Expected total=%v but found=%v", 45, total)
+				}
+			},
+		},
+		{
+			name: "unordered with an error",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEachUnordered(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					if n == 4 {
+						return testErr
+					}
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != testErr {
+					t.Fatalf("Expected an error")
+				}
+
+				if total >= 45 {
+					t.Fatalf("Expected total<%v but found=%v", 45, total)
+				}
+			},
+		},
+		{
+			name: "unordered with ErrSearchSuccess",
+			fn: func(ctx context.Context) {
+				var mu sync.Mutex
+				var total int
+				err := ForEachUnordered(3, func(n int) error {
+					time.Sleep(100 * time.Millisecond)
+					mu.Lock()
+					defer mu.Unlock()
+					if n == 4 {
+						return ErrSearchSuccess
+					}
+					total = total + n
+					return nil
+				}, []int{1,2,3,4,5,6,7,8,9})
+
+				if err != ErrSearchSuccess {
+					t.Fatalf("Expected ErrSearchSuccess")
+				}
+
+				if total >= 45 {
+					t.Fatalf("Expected total<%v but found=%v", 45, total)
 				}
 			},
 		},
