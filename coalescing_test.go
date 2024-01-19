@@ -139,7 +139,8 @@ func TestCoalesce(t *testing.T) {
 		{
 			name: "gen2 context timeout",
 			fn: func(qr *Coalescer[*mystruct]) {
-				ctx, _ := context.WithTimeout(context.Background(), 5*time.Millisecond)
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+				defer cancel()
 				v, err := qr.RunWithContext(ctx)
 				if err != context.DeadlineExceeded {
 					t.Errorf("Expected err=%v received=%v", context.DeadlineExceeded, err)
@@ -288,7 +289,8 @@ func TestCacheCoalesce(t *testing.T) {
 		{
 			name: "t4_context_timeout",
 			fn: func(qr *Coalescer[string]) {
-				ctx, _ := context.WithTimeout(context.Background(), 1*time.Millisecond)
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+				defer cancel()
 				v, err := qr.RunWithContext(ctx)
 				if err != context.DeadlineExceeded {
 					t.Errorf("Expected err=%v received=%v", context.DeadlineExceeded, err)

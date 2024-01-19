@@ -42,7 +42,8 @@ func TestTimedLock(t *testing.T) {
 		{
 			name: "lock with context fails",
 			op: func(tl *TimedMutex) {
-				ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				defer cancel()
 				if err := tl.LockWithContext(ctx); err == nil {
 					t.Errorf("Expected a timeout waiting for lock")
 				}
@@ -91,7 +92,8 @@ func TestTimedLock(t *testing.T) {
 		{
 			name: "lock with context succeeds",
 			op: func(tl *TimedMutex) {
-				ctx, _ := context.WithTimeout(context.Background(), 1*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				defer cancel()
 				if err := tl.LockWithContext(ctx); err != nil {
 					t.Errorf("Expected immediate lock with context")
 				}

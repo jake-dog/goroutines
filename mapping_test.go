@@ -1158,7 +1158,7 @@ func TestForEach(t *testing.T) {
 					defer mu.Unlock()
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != nil {
 					t.Fatalf("Expected no error")
@@ -1183,7 +1183,7 @@ func TestForEach(t *testing.T) {
 					}
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != testErr {
 					t.Fatalf("Expected an error")
@@ -1208,7 +1208,7 @@ func TestForEach(t *testing.T) {
 					}
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != ErrSearchSuccess {
 					t.Fatalf("Expected ErrSearchSuccess")
@@ -1230,7 +1230,7 @@ func TestForEach(t *testing.T) {
 					defer mu.Unlock()
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != nil {
 					t.Fatalf("Expected no error")
@@ -1255,7 +1255,7 @@ func TestForEach(t *testing.T) {
 					}
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != testErr {
 					t.Fatalf("Expected an error")
@@ -1280,7 +1280,7 @@ func TestForEach(t *testing.T) {
 					}
 					total = total + n
 					return nil
-				}, []int{1,2,3,4,5,6,7,8,9})
+				}, []int{1, 2, 3, 4, 5, 6, 7, 8, 9})
 
 				if err != ErrSearchSuccess {
 					t.Fatalf("Expected ErrSearchSuccess")
