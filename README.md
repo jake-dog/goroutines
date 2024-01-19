@@ -3,6 +3,8 @@
 [![GoDoc](https://pkg.go.dev/badge/github.com/jake-dog/goroutines)](https://pkg.go.dev/github.com/jake-dog/goroutines)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jake-dog/goroutines)](https://goreportcard.com/report/github.com/jake-dog/goroutines)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jake-dog/goroutines/blob/master/LICENSE)
+![tests](https://github.com/jake-dog/goroutines/actions/workflows/go.yml/badge.svg?branch=master)
+[![codecov](https://codecov.io/gh/jake-dog/goroutines/graph/badge.svg?token=5VCRFWBTXN)](https://codecov.io/gh/jake-dog/goroutines)
 
 Safe and simple "batteries included" concurrency with abort-on-error and cancellation. Functionality is similar to [sourcegraph/conc](https://github.com/sourcegraph/conc), providing ergonomic alternatives to [sync/errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup) and [sync/singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight). Only dependency is on the standard library.
 
