@@ -1,6 +1,7 @@
 # goroutines
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/jake-dog/goroutines)](https://pkg.go.dev/github.com/jake-dog/goroutines)
+![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.19-%23007d9c)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jake-dog/goroutines)](https://goreportcard.com/report/github.com/jake-dog/goroutines)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jake-dog/goroutines/blob/master/LICENSE)
 ![tests](https://github.com/jake-dog/goroutines/actions/workflows/go.yml/badge.svg?branch=master)
