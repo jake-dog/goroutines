@@ -23,7 +23,7 @@ func NewVariableTimedMutex(limit int) *TimedMutex {
 	l := &TimedMutex{
 		c: make(chan struct{}, p),
 	}
-	for i := 0; i < limit; i++ {
+	for i := 0; i < p; i++ {
 		l.c <- s
 	}
 	return l
