@@ -113,3 +113,56 @@ func TestTimedLock(t *testing.T) {
 		})
 	}
 }
+
+func TestPanics(t *testing.T) {
+	ttests := []struct {
+		name    string
+		fn      func()
+	}{
+		{
+			name: "invalid mutex panic lock",
+			fn: func() {
+				mu := &TimedMutex{}
+				if ok := mu.TryLock(); ok {
+					t.Errorf("Unexpected trylock success")
+				}
+			},
+		},
+		{
+			name: "invalid mutex panic lock with context",
+			fn: func() {
+				mu := &TimedMutex{}
+				if err := mu.LockWithContext(context.Background()); err != nil {
+					t.Errorf("Unexpected lock err%v", err)
+				}
+			},
+		},
+		{
+			name: "invalid mutex panic unlock",
+			fn: func() {
+				mu := &TimedMutex{}
+				mu.Unlock()
+			},
+		},
+		{
+			name: "panic unlock of unlocked mutex",
+			fn: func() {
+				mu := NewVariableTimedMutex(-1)
+				mu.Unlock()
+			},
+		},
+	}
+
+	for _, tt := range ttests {
+		t.Run(tt.name, func(t *testing.T) {
+			func(fni func()) {
+				defer func() {
+					if r := recover(); r == nil {
+						t.Errorf("Panic expected but none occurred")
+					}
+				}()
+				fni()
+			}(tt.fn)
+		})
+	}
+}
