@@ -96,7 +96,8 @@ func LimitHandler(h http.Handler, limit int, timeout time.Duration) http.Handler
 	mu := goroutines.NewVariableTimedMutex(limit)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, _ := context.WithTimeout(r.Context(), timeout)
+		ctx, cancel := context.WithTimeout(r.Context(), timeout)
+		defer cancel()
 		if err := mu.LockWithContext(ctx); err != nil {
 			w.WriteHeader(http.StatusTooManyRequests)
 			return
