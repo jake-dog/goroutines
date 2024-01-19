@@ -280,6 +280,7 @@ func search[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 	var err error
 	hasError := make(chan error, len(args))
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	mapFn := mapUnordered[I, *F[R]]
 	if ordered {
@@ -326,6 +327,7 @@ func inject[I any, R any, A any](ctx context.Context, ordered bool, qlen int, a 
 	var err error
 	hasError := make(chan error, len(args))
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	mapFn := mapUnordered[I, *F[R]]
 	if ordered {
@@ -398,13 +400,14 @@ func mapErr[I any, R any](ctx context.Context, ordered bool, qlen int, fn func(I
 				case <-ctx.Done():
 					return vn, ctx.Err(), true
 				default:
+					cancel()
 				}
 				return
 			}
 			vn, errn = r.Return()
 			if errn != nil {
 				cancel()
-				for _ = range results {
+				for range results {
 					// consume all remaining workers
 				}
 				done = true
