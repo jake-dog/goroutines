@@ -10,4 +10,4 @@ lint:
 	@golangci-lint run -v
 
 fmt:
-	@$(foreach f,$(wildcard $(PWD)/*.go),gofmt -w $(f);)
+	@$(foreach f,$(wildcard $(PWD)/*.go),gofmt -s -w $(f);)
