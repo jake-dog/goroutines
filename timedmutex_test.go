@@ -116,8 +116,8 @@ func TestTimedLock(t *testing.T) {
 
 func TestPanics(t *testing.T) {
 	ttests := []struct {
-		name    string
-		fn      func()
+		name string
+		fn   func()
 	}{
 		{
 			name: "invalid mutex panic lock",
